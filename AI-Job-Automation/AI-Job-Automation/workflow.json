@@ -1,0 +1,55 @@
+{
+  "name": "AI Job Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "days", "daysInterval": 1 }]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://jooble.org/api/YOUR_API_KEY",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "keywords", "value": "Python Developer AI ML" },
+            { "name": "location", "value": "Hyderabad" }
+          ]
+        }
+      },
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const jobs = items[0].json.jobs || [];\nconst html = `<h2>Today's AI/ML Jobs</h2>` + jobs.slice(0, 10).map(j => `<div><h3>${j.title}</h3><p>${j.company} - ${j.location}</p><a href='${j.link}'>Apply Now</a></div>`).join('');\nreturn [{ json: { html, count: jobs.length } }];"
+      },
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "sendTo": "your-email@gmail.com",
+        "subject": "Daily AI/ML Job Alerts - {{ $now.format('dd MMM yyyy') }}",
+        "message": "={{ $json.html }}",
+        "options": { "appendAttribution": false }
+      },
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "HTTP Request", "type": "main", "index": 0 }]] },
+    "HTTP Request": { "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]] },
+    "Code in JavaScript": { "main": [[{ "node": "Send a message", "type": "main", "index": 0 }]] }
+  }
+}
